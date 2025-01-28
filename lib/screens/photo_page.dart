@@ -138,12 +138,14 @@ class _ImageDisplayPageState extends State<ImageDisplayPage> {
             child: Image.file(File(widget.imagePath)),
           ),
           Padding(
-            padding: const EdgeInsets.all(40.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 90),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
                   style: ButtonStyle(
+                      padding: WidgetStatePropertyAll(
+                          EdgeInsets.symmetric(vertical: 15, horizontal: 20)),
                       backgroundColor: WidgetStateProperty.all(Colors.white70)),
                   onPressed: () {
                     downloadImage();
@@ -155,6 +157,8 @@ class _ImageDisplayPageState extends State<ImageDisplayPage> {
                 ),
                 ElevatedButton(
                   style: ButtonStyle(
+                      padding: WidgetStatePropertyAll(
+                          EdgeInsets.symmetric(vertical: 15, horizontal: 20)),
                       backgroundColor: WidgetStateProperty.all(Colors.white70)),
                   onPressed: () {
                     widget.onRetake();
@@ -167,10 +171,11 @@ class _ImageDisplayPageState extends State<ImageDisplayPage> {
                 ),
                 ElevatedButton(
                   style: ButtonStyle(
+                      padding: WidgetStatePropertyAll(
+                          EdgeInsets.symmetric(vertical: 15, horizontal: 20)),
                       backgroundColor: WidgetStateProperty.all(Colors.white70)),
                   onPressed: () {
                     uploadImageAndshowQr();
-                    _uploadImageToSupabase();
                   },
                   child: Text(
                     'Upload',
