@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ImageDisplayPage extends StatefulWidget {
   final String imagePath;
@@ -16,6 +17,8 @@ class ImageDisplayPage extends StatefulWidget {
 }
 
 class _ImageDisplayPageState extends State<ImageDisplayPage> {
+  bool _isUploading = false;
+
   Future<void> downloadImage() async {
     final response = await ImageGallerySaver.saveFile(widget.imagePath!);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -26,17 +29,28 @@ class _ImageDisplayPageState extends State<ImageDisplayPage> {
     );
   }
 
-  void showQrCode() {
+  Future<void> uploadImageAndshowQr() async {
+    String? imageUrl = await _uploadImageToSupabase();
+    if (imageUrl != null) {
+      showQrCode(imageUrl);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to upload image')),
+      );
+    }
+  }
+
+  void showQrCode(String url) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Download Image'),
+          title: Text('Download Image Url'),
           content: SizedBox(
             height: 300,
             width: 300,
             child: QrImageView(
-              data: widget.imagePath,
+              data: url,
               version: QrVersions.auto,
               size: 200,
             ),
@@ -56,13 +70,67 @@ class _ImageDisplayPageState extends State<ImageDisplayPage> {
     );
   }
 
+  Future<String?> _uploadImageToSupabase() async {
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.png';
+      final response = await Supabase.instance.client.storage
+          .from('photo-bucket')
+          .upload(fileName, File(widget.imagePath));
+
+      setState(() {
+        _isUploading = false;
+      });
+
+      if (response != null || response.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Image Uploaded Successfully!'),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload failed'),
+          ),
+        );
+      }
+      final imageUrl = Supabase.instance.client.storage
+          .from('photo-bucket')
+          .getPublicUrl(fileName);
+
+      return imageUrl;
+    } on Exception catch (e) {
+      setState(() {
+        _isUploading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Upload failed!'),
+        ),
+      );
+      print('Error uploading image: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Image Preview'),
-      ),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          title: const Text('Image Preview',
+              style: TextStyle(color: Colors.white70)),
+          leading: IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white70),
+          )),
       body: Stack(
         alignment: Alignment.bottomCenter,
         children: [
@@ -75,18 +143,39 @@ class _ImageDisplayPageState extends State<ImageDisplayPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
+                  style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.all(Colors.white70)),
                   onPressed: () {
                     downloadImage();
-                    showQrCode();
                   },
-                  child: Text('Download'),
+                  child: Text(
+                    'Download',
+                    style: TextStyle(color: Colors.black),
+                  ),
                 ),
                 ElevatedButton(
+                  style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.all(Colors.white70)),
                   onPressed: () {
                     widget.onRetake();
                     Navigator.pop(context);
                   },
-                  child: Text('Retake'),
+                  child: Text(
+                    'Retake',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.all(Colors.white70)),
+                  onPressed: () {
+                    uploadImageAndshowQr();
+                    _uploadImageToSupabase();
+                  },
+                  child: Text(
+                    'Upload',
+                    style: TextStyle(color: Colors.black),
+                  ),
                 ),
               ],
             ),
@@ -96,44 +185,3 @@ class _ImageDisplayPageState extends State<ImageDisplayPage> {
     );
   }
 }
-
-                             
-
-
-// Column(
-//                 children: [
-//                   if (imagePath != null)
-//                     Column(
-//                       children: [
-//                         Container(
-//                             height: 200,
-//                             width: 200,
-//                             child:
-//                                 Image.file(File(imagePath!), fit: BoxFit.cover)),
-//                         QrImageView(
-//                           data: imagePath!,
-//                           version: QrVersions.auto,
-//                           size: 200.0,
-//                         ),
-//                         Row(
-//                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//                           children: [
-//                             ElevatedButton(
-//                               onPressed: downloadImage,
-//                               child: Text('Download'),
-//                             ),
-//                             ElevatedButton(
-//                               onPressed: () {
-//                                 setState(() {
-//                                   imagePath = null;
-//                                 });
-//                                 captureImage();
-//                               },
-//                               child: Text('Retake'),
-//                             ),
-//                           ],
-//                         ),
-//                       ],
-//                     ),
-//                       ],
-//                     );
